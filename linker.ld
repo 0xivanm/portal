@@ -35,6 +35,7 @@ SECTIONS
         _iramend = .;
     } > IRAM AT> DRAM
     _iramcopy = LOADADDR(.iram);
+    ASSERT(_iramcopy + SIZEOF(.iram) <= 8M, "linux.bin exceeds the 8MB bootloader limit")
 
     .bss (_iramcopy + SIZEOF(.iram)) (NOLOAD) : {
         /* zeroing will write 4 byte words */

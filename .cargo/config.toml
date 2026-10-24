@@ -1,4 +1,5 @@
-[target.armv4t-none-eabi]
-rustflags = [
-    "-C", "link-arg=-Tlinker.ld",
-]
+[build]
+target = "armv4t-none-eabi"
+
+[unstable]
+build-std = ["core"]

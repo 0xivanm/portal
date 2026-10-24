@@ -7,6 +7,10 @@ const FIRST: u32 = 0x20;
 const LAST: u32 = 0x7E;
 
 fn main() {
+    let root = env::var("CARGO_MANIFEST_DIR").unwrap();
+    println!("cargo:rustc-link-arg=-T{root}/linker.ld");
+    println!("cargo:rerun-if-changed=linker.ld");
+
     generate_font();
 }
 

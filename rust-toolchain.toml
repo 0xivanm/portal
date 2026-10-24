@@ -1,0 +1,4 @@
+[toolchain]
+channel = "nightly"
+# armv4t has no prebuilt core, build-std compiles it from source
+components = ["rust-src"]
