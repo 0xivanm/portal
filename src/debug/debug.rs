@@ -7,6 +7,7 @@ const SCALE: usize = 4;
 // always display 8 digits (complete u32)
 const DIGIT_COUNT: usize = 8;
 const DIGIT_ADVANCE: usize = (FONT_WIDTH + 1) * SCALE;
+const ROW_HEIGHT: usize = (FONT_HEIGHT + 2) * SCALE;
 
 // Each row has five bits. A 1 draws a pixel, a 0 leaves the background
 const HEX_FONT: [[u8; FONT_HEIGHT]; 16] = [
@@ -182,6 +183,19 @@ pub fn draw_hex(fb: &mut [u16; LCD_WIDTH * LCD_HEIGHT], x: usize, y: usize, valu
         let digit = ((value >> shift) & 0xF) as usize;
         let digit_x = x + digit_index * DIGIT_ADVANCE;
         draw_digit(fb, digit_x, y, digit, color);
+    }
+}
+
+// one value per row: green if the check passed, red if not
+pub fn draw_checks<const N: usize>(fb: &mut [u16; LCD_WIDTH * LCD_HEIGHT], checks: [(u32, bool); N]) {
+    assert!(N != 0 && N * ROW_HEIGHT <= LCD_HEIGHT);
+    fb.fill(0);
+
+    let x = (LCD_WIDTH - DIGIT_COUNT * DIGIT_ADVANCE) / 2;
+    let top = (LCD_HEIGHT - N * ROW_HEIGHT) / 2;
+    for (index, (value, ok)) in checks.into_iter().enumerate() {
+        let color = if ok { 0x07E0 } else { 0xF800 };
+        draw_hex(fb, x, top + index * ROW_HEIGHT, value, color);
     }
 }
 

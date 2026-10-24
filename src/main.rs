@@ -6,17 +6,17 @@ mod graphics;
 mod platform;
 mod debug;
 
+use core::ptr::{read_volatile, write_volatile};
+
+use crate::debug::debug::draw_checks;
 use crate::drivers::{backlight, lcd};
-use crate::platform::{clock, timer};
-use crate::platform::display::{LCD_HEIGHT, LCD_WIDTH};
+use crate::graphics::framebuffer;
+use crate::platform::clock;
+use crate::platform::registers::{MMAP0_LOGICAL, MMAP0_PHYSICAL};
 
-const FPS: u32 = 18;
-const FRAME_BYTES: usize = LCD_WIDTH * LCD_HEIGHT * 2;
+const UNCACHED_BASE: usize = 0x1000_0000;
 
-#[repr(align(4))]
-struct Video([u8; include_bytes!("../assets/video.raw").len()]);
-
-static VIDEO: Video = Video(*include_bytes!("../assets/video.raw"));
+static mut PROBE: u32 = 0;
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
@@ -31,17 +31,32 @@ pub extern "C" fn rust_main() -> ! {
     let mut lcd = lcd::init();
     backlight::on();
 
-    assert!(!VIDEO.0.is_empty());
-    assert_eq!(VIDEO.0.len() % FRAME_BYTES, 0);
+    let logical = &raw mut PROBE;
+    let physical = (logical as usize | UNCACHED_BASE) as *mut u32;
+
+    // both addresses must reach the same word
+    let (forward, backward) = unsafe {
+        write_volatile(logical, 0x1234_5678);
+        let forward = read_volatile(physical);
+        write_volatile(physical, 0x8765_4321);
+        (forward, read_volatile(logical))
+    };
+    let (mmap_logical, mmap_physical) = unsafe { (MMAP0_LOGICAL.read(), MMAP0_PHYSICAL.read()) };
+
+    let rows = [
+        (rust_main as usize as u32, (rust_main as usize) < UNCACHED_BASE),
+        (logical as u32, (logical as usize) < UNCACHED_BASE),
+        (mmap_logical, mmap_logical == 0x0000_3E00),
+        (mmap_physical, mmap_physical == 0x1000_0F84),
+        (forward, forward == 0x1234_5678),
+        (backward, backward == 0x8765_4321),
+    ];
+
+    let fb = unsafe { framebuffer::take() };
+    draw_checks(fb.pixels_mut(), rows);
+    lcd.update(fb.pixels());
 
     loop {
-        let mut deadline = timer::micros();
-        for frame in VIDEO.0.chunks_exact(FRAME_BYTES) {
-            lcd.draw_direct(frame);
-
-            // Transfer counts toward the frame interval.
-            deadline = deadline.wrapping_add(1_000_000 / FPS);
-            timer::wait_until(deadline);
-        }
+        core::hint::spin_loop();
     }
 }
