@@ -1,3 +1,5 @@
+use crate::graphics::color::{GRAY, WHITE};
+use crate::graphics::framebuffer::Framebuffer;
 use crate::platform::display::{LCD_HEIGHT, LCD_WIDTH};
 use crate::platform::timer;
 use core::arch::asm;
@@ -37,9 +39,10 @@ pub fn compare<T: ?Sized, const N: usize>(
     totals.map(|total| (total / u64::from(rounds)) as u32)
 }
 
-pub fn draw_bars<const N: usize>(fb: &mut [u16; LCD_WIDTH * LCD_HEIGHT], times: [u32; N], colors: [u16; N]) {
+pub fn draw_bars<const N: usize>(fb: &mut Framebuffer, times: [u32; N], colors: [u16; N]) {
     assert!(N != 0 && N <= LCD_HEIGHT - 48);
-    fb.fill(0);
+    fb.clear();
+    let fb = fb.pixels_mut();
 
     let longest = times.into_iter().max().unwrap_or(1).max(1);
     let slot = (LCD_HEIGHT - 48) / N;
@@ -47,8 +50,8 @@ pub fn draw_bars<const N: usize>(fb: &mut [u16; LCD_WIDTH * LCD_HEIGHT], times: 
 
     // All bars share one scale: longer means slower.
     for y in 24..LCD_HEIGHT - 24 {
-        fb[y * LCD_WIDTH + 19] = 0xFFFF;
-        fb[y * LCD_WIDTH + LCD_WIDTH - 20] = 0x4208;
+        fb[y * LCD_WIDTH + 19] = WHITE;
+        fb[y * LCD_WIDTH + LCD_WIDTH - 20] = GRAY;
     }
 
     for (index, time) in times.into_iter().enumerate() {
