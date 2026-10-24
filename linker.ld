@@ -2,7 +2,8 @@ ENTRY(_start)
 
 MEMORY
 {
-    DRAM : ORIGIN = 0x10000000, LENGTH = 32M
+    /* SDRAM is physically at 0x10000000, start.s remaps it to 0 */
+    DRAM : ORIGIN = 0x00000000, LENGTH = 32M
     IRAM : ORIGIN = 0x40000000, LENGTH = 48K
 }
 

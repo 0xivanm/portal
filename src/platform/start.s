@@ -6,6 +6,14 @@
 .equ SLEEP, 0x80000000
 .equ COPSLEEP, 0x80000000
 .equ PROC_ID, 0x60000000
+.equ CACHE_CTRL, 0x6000c000
+.equ IRAM, 0x40000000
+.equ MMAP0_LOGICAL, 0xf000f000
+.equ MMAP0_PHYSICAL, 0xf000f004
+@ logical base 0, 32MB window
+.equ MMAP_MASK, 0x00003e00
+@ read, write, data and code access
+.equ MMAP_FLAGS, 0x00000f84
 
 _start:
     @ disable interrupts and enter system mode
@@ -37,6 +45,44 @@ cpu:
     ldr r3, [r4]
     tst r3, #COPSLEEP
     beq 3b
+
+    @ the bootloader may have left the cache on
+    ldr r2, =CACHE_CTRL
+    mov r1, #0
+    str r1, [r2]
+
+    @ linked at 0 but still running at the physical address, so
+    @ label addresses need the execution base added until remapped
+    and r6, pc, #0xff000000
+    ldr r3, =remap_start
+    ldr r4, =remap_end
+    orr r3, r3, r6
+    orr r4, r4, r6
+
+    @ remap from IRAM: the memory map can't change under our own fetches
+    mov r2, #IRAM
+1:
+    ldr r5, [r3], #4
+    str r5, [r2], #4
+    cmp r3, r4
+    blo 1b
+
+    ldr r1, =MMAP0_LOGICAL
+    ldr r2, =MMAP_MASK
+    ldr r3, =MMAP0_PHYSICAL
+    ldr r4, =MMAP_FLAGS
+    orr r4, r4, r6
+    mov pc, #IRAM
+
+remap_start:
+    str r2, [r1]
+    str r4, [r3]
+    @ continue at the link address
+    ldr r1, remap_target
+    bx r1
+remap_target:
+    .word remap_end
+remap_end:
 
     @ zero out bss
     ldr r2, =_bssend
