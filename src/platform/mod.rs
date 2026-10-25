@@ -4,6 +4,7 @@ pub mod cache;
 pub mod clock;
 pub mod display;
 pub mod gpio;
+pub mod irq;
 pub mod registers;
 pub mod stack;
 pub mod timer;

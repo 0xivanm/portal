@@ -27,5 +27,13 @@ handler undefined, 4, 0
 handler swi, 4, 1
 handler prefetch_abort, 4, 2
 handler data_abort, 8, 3
-handler irq, 4, 4
 handler fiq, 4, 5
+
+@ returns to the interrupted code, so only the registers a call may overwrite
+@ are saved. ^ with pc in the list also restores the cpsr from the spsr
+.global irq
+irq:
+    sub lr, lr, #4
+    stmdb sp!, {r0-r3, r12, lr}
+    bl irq_dispatch
+    ldmia sp!, {r0-r3, r12, pc}^

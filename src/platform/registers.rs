@@ -55,6 +55,16 @@ pub const PLL_STATUS: Register32 = Register32::new(0x6000_603C);
 pub const MMAP0_LOGICAL: Register32 = Register32::new(0xF000_F000);
 pub const MMAP0_PHYSICAL: Register32 = Register32::new(0xF000_F004);
 
+pub const CPU_INT_STAT: Register32 = Register32::new(0x6000_4000);
+pub const INT_FORCED_SET: Register32 = Register32::new(0x6000_4018);
+pub const INT_FORCED_CLR: Register32 = Register32::new(0x6000_401C);
+pub const CPU_INT_EN: Register32 = Register32::new(0x6000_4024);
+pub const CPU_INT_DIS: Register32 = Register32::new(0x6000_4028);
+pub const COP_INT_DIS: Register32 = Register32::new(0x6000_4038);
+pub const HI_INT_FORCED_CLR: Register32 = Register32::new(0x6000_411C);
+pub const CPU_HI_INT_DIS: Register32 = Register32::new(0x6000_4128);
+pub const COP_HI_INT_DIS: Register32 = Register32::new(0x6000_4138);
+
 pub const CACHE_CTL: Register32 = Register32::new(0x6000_C000);
 pub const CACHE_PRIORITY: Register32 = Register32::new(0x6000_6044);
 pub const CACHE_MASK: Register32 = Register32::new(0xF000_F040);

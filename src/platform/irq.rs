@@ -1,0 +1,42 @@
+use core::arch::asm;
+
+use crate::platform::registers::{
+    COP_HI_INT_DIS, COP_INT_DIS, CPU_HI_INT_DIS, CPU_INT_DIS, CPU_INT_EN, CPU_INT_STAT, HI_INT_FORCED_CLR,
+    INT_FORCED_CLR, Register32,
+};
+
+// interrupt enables of GPIO ports A-L, four ports per block
+const GPIO_INT_EN: [usize; 3] = [0x6000_D050, 0x6000_D0D0, 0x6000_D150];
+
+// the bootloader may have left sources enabled: disable_all_interrupts
+pub fn mask_all() {
+    unsafe {
+        COP_HI_INT_DIS.write(u32::MAX);
+        CPU_HI_INT_DIS.write(u32::MAX);
+        HI_INT_FORCED_CLR.write(u32::MAX);
+        COP_INT_DIS.write(u32::MAX);
+        CPU_INT_DIS.write(u32::MAX);
+        INT_FORCED_CLR.write(u32::MAX);
+        for block in GPIO_INT_EN {
+            for port in 0..4 {
+                Register32::new(block + port * 4).write(0);
+            }
+        }
+    }
+}
+
+// the controller has separate enable and disable registers: only the written bits change
+pub fn enable_source(mask: u32) {
+    unsafe { CPU_INT_EN.write(mask) };
+}
+
+// clears the I bit in the cpsr
+pub fn enable() {
+    unsafe { asm!("mrs {0}, cpsr", "bic {0}, {0}, #0x80", "msr cpsr_c, {0}", out(reg) _) };
+}
+
+#[unsafe(no_mangle)]
+extern "C" fn irq_dispatch() {
+    let pending = unsafe { CPU_INT_STAT.read() };
+    panic!("unexpected irq {pending:08X}");
+}
