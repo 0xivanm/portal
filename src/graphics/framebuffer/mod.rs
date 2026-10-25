@@ -15,7 +15,7 @@ pub struct Framebuffer {
 
 struct Storage(UnsafeCell<Framebuffer>);
 
-// Only take() accesses this storage, once during startup.
+// Only take() accesses this storage
 unsafe impl Sync for Storage {}
 
 static FRAMEBUFFER: Storage = Storage(UnsafeCell::new(Framebuffer {

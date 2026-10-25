@@ -9,6 +9,7 @@ mod debug;
 use core::ptr::{read_volatile, write_volatile};
 
 use crate::debug::debug::{draw_charset, draw_checks};
+use crate::debug::fault;
 use crate::drivers::{backlight, lcd};
 use crate::graphics::framebuffer;
 use crate::platform::{clock, timer};
@@ -17,13 +18,6 @@ use crate::platform::registers::{MMAP0_LOGICAL, MMAP0_PHYSICAL};
 const UNCACHED_BASE: usize = 0x1000_0000;
 
 static mut PROBE: u32 = 0;
-
-#[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
-    loop {
-        core::hint::spin_loop();
-    }
-}
 
 #[unsafe(no_mangle)]
 pub extern "C" fn rust_main() -> ! {
@@ -54,13 +48,15 @@ pub extern "C" fn rust_main() -> ! {
     ];
 
     let fb = unsafe { framebuffer::take() };
-    loop {
-        draw_checks(fb, rows);
-        lcd.update(fb.pixels());
-        timer::delay_ms(3000);
+    draw_checks(fb, rows);
+    lcd.update(fb.pixels());
+    timer::delay_ms(3000);
 
-        draw_charset(fb);
-        lcd.update(fb.pixels());
-        timer::delay_ms(3000);
-    }
+    draw_charset(fb);
+    lcd.update(fb.pixels());
+    timer::delay_ms(3000);
+
+    // either a data abort, or a panic showing what the load returned
+    let value = fault::load_from(0x8000_0000);
+    panic!("load from 80000000 returned {value:08X}");
 }

@@ -14,10 +14,30 @@
 .equ MMAP_MASK, 0x00003e00
 @ read, write, data and code access
 .equ MMAP_FLAGS, 0x00000f84
+@ processor modes with IRQ and FIQ masked
+.equ FIQ_MODE, 0xd1
+.equ IRQ_MODE, 0xd2
+.equ SVC_MODE, 0xd3
+.equ ABT_MODE, 0xd7
+.equ UND_MODE, 0xdb
+.equ SYS_MODE, 0xdf
 
+@ exception vectors, at address 0 after the remap. on an exception the cpu
+@ jumps to a fixed address (0x00 reset, 0x04 undefined, ... 0x1c fiq), so
+@ each entry must be exactly one 4-byte instruction, in this order
 _start:
+    b reset             @ relative branch: runs before the remap
+    b undefined
+    b swi
+    b prefetch_abort
+    b data_abort
+    b .                 @ reserved
+    b irq
+    b fiq
+
+reset:
     @ disable interrupts and enter system mode
-    msr cpsr_c, #0xdf
+    msr cpsr_c, #SYS_MODE
 
     @ which processor is this?
     ldr r0, =PROC_ID
@@ -93,7 +113,7 @@ remap_end:
     strhi r0, [r1], #4
     bhi 1b
 
-    @ fill stack
+    @ fill all stacks
     ldr r1, =_stackend
     ldr r2, =_stackbegin
     ldr r0, =0xDEADBEEF
@@ -102,7 +122,19 @@ remap_end:
     strhi r0, [r2], #4
     bhi 1b
 
-    ldr sp, =_stackend
+    @ each mode has its own sp, the fatal exceptions share one stack
+    msr cpsr_c, #FIQ_MODE
+    ldr sp, =_fiqstack
+    msr cpsr_c, #IRQ_MODE
+    ldr sp, =_irqstack
+    msr cpsr_c, #SVC_MODE
+    ldr sp, =_exceptionstack
+    msr cpsr_c, #ABT_MODE
+    ldr sp, =_exceptionstack
+    msr cpsr_c, #UND_MODE
+    ldr sp, =_exceptionstack
+    msr cpsr_c, #SYS_MODE
+    ldr sp, =_systemstack
 
     @ copy IRAM code after leaving the bootloader and sleeping the COP
     ldr r0, =_iramcopy

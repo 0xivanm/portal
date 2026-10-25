@@ -50,7 +50,16 @@ SECTIONS
     .stack (NOLOAD) : {
         . = ALIGN(8);
         _stackbegin = .;
+        /* stacks grow down, so each symbol is the top of one. the system
+           stack is lowest: an overflow hits .bss, not the exception stacks */
         . += 0x2000;
+        _systemstack = .;
+        . += 0x400;
+        _irqstack = .;
+        . += 0x200;
+        _fiqstack = .;
+        . += 0x800;
+        _exceptionstack = .;
         _stackend = .;
     } > DRAM
 }
