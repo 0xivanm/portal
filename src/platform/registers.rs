@@ -30,6 +30,7 @@ impl Register32 {
 }
 
 pub const DEV_INIT1: Register32 = Register32::new(0x7000_0010);
+pub const DEV_RS: Register32 = Register32::new(0x6000_6004);
 pub const DEV_EN: Register32 = Register32::new(0x6000_600C);
 pub const PWM0_CTRL: Register32 = Register32::new(0x7000_A000);
 
@@ -37,6 +38,10 @@ pub const PWM0_CTRL: Register32 = Register32::new(0x7000_A000);
 pub const USEC_TIMER: Register32 = Register32::new(0x6000_5010);
 
 pub const GPIOL_OUTPUT_VAL: Register32 = Register32::new(0x6000_D12C);
+
+pub const GPIOA_ENABLE: Register32 = Register32::new(0x6000_D000);
+pub const GPIOA_OUTPUT_EN: Register32 = Register32::new(0x6000_D010);
+pub const GPIOA_INPUT_VAL: Register32 = Register32::new(0x6000_D030);
 
 pub const GPIOC_ENABLE: Register32 = Register32::new(0x6000_D008);
 pub const GPIOC_OUTPUT_EN: Register32 = Register32::new(0x6000_D018);
@@ -61,9 +66,16 @@ pub const INT_FORCED_CLR: Register32 = Register32::new(0x6000_401C);
 pub const CPU_INT_EN: Register32 = Register32::new(0x6000_4024);
 pub const CPU_INT_DIS: Register32 = Register32::new(0x6000_4028);
 pub const COP_INT_DIS: Register32 = Register32::new(0x6000_4038);
+pub const CPU_HI_INT_STAT: Register32 = Register32::new(0x6000_4100);
 pub const HI_INT_FORCED_CLR: Register32 = Register32::new(0x6000_411C);
+pub const CPU_HI_INT_EN: Register32 = Register32::new(0x6000_4124);
 pub const CPU_HI_INT_DIS: Register32 = Register32::new(0x6000_4128);
 pub const COP_HI_INT_DIS: Register32 = Register32::new(0x6000_4138);
+
+// opto controller that reads the clickwheel
+pub const CLICKWHEEL_CTRL: Register32 = Register32::new(0x7000_C100);
+pub const CLICKWHEEL_STATUS: Register32 = Register32::new(0x7000_C104);
+pub const CLICKWHEEL_DATA: Register32 = Register32::new(0x7000_C140);
 
 pub const CACHE_CTL: Register32 = Register32::new(0x6000_C000);
 pub const CACHE_PRIORITY: Register32 = Register32::new(0x6000_6044);

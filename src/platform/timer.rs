@@ -11,6 +11,10 @@ pub fn wait_until(deadline: u32) {
     }
 }
 
+pub fn delay_us(us: u32) {
+    wait_until(micros().wrapping_add(us));
+}
+
 pub fn delay_ms(ms: u32) {
     // chuncked waits to avoid overflowing conversion to ms
     let mut remaining = ms;

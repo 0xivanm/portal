@@ -5,9 +5,10 @@ mod drivers;
 mod graphics;
 mod platform;
 mod debug;
+mod sync;
 
-use crate::debug::debug::draw_charset;
-use crate::drivers::{backlight, lcd};
+use crate::debug::debug::draw_events;
+use crate::drivers::{backlight, clickwheel, lcd};
 use crate::graphics::framebuffer;
 use crate::platform::{cache, clock, irq};
 
@@ -19,12 +20,21 @@ pub extern "C" fn rust_main() -> ! {
     irq::enable();
     let mut lcd = lcd::init();
     backlight::on();
+    let mut wheel = clickwheel::init();
 
     let fb = framebuffer::take().unwrap();
-    draw_charset(fb);
-    lcd.update(fb.pixels());
-
+    let mut events = [None; 12];
+    let mut changed = true;
     loop {
-        core::hint::spin_loop();
+        wheel.poll(|event| {
+            events.rotate_right(1);
+            events[0] = Some(event);
+            changed = true;
+        });
+        if changed {
+            changed = false;
+            draw_events(fb, &events, wheel.dropped());
+            lcd.update(fb.pixels());
+        }
     }
 }

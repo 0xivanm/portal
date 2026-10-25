@@ -1,5 +1,6 @@
 use core::fmt::Write;
 
+use crate::drivers::clickwheel::Event;
 use crate::graphics::color::{BLACK, GRAY, GREEN, RED, WHITE};
 use crate::graphics::framebuffer::Framebuffer;
 use crate::graphics::text::Text;
@@ -47,6 +48,18 @@ pub fn draw_timings<const N: usize>(fb: &mut Framebuffer, title: &str, timings: 
     for (index, (label, time, _)) in timings.into_iter().enumerate() {
         text.move_to(MARGIN, TOP + index * slot);
         let _ = write!(text, "{label:<22}{time:>7} us");
+    }
+}
+
+pub fn draw_events(fb: &mut Framebuffer, events: &[Option<Event>], dropped: u32) {
+    fb.clear();
+    let mut text = Text::new(fb);
+    text.set_scale(2);
+    text.move_to(8, 8);
+
+    let _ = writeln!(text, "dropped {dropped}\n");
+    for event in events.iter().flatten() {
+        let _ = writeln!(text, "{event:?}");
     }
 }
 
