@@ -40,7 +40,7 @@ impl<'a> Text<'a> {
         self.y += font::HEIGHT * self.scale;
     }
 
-    // wraps at the right edge: fill_rect clips whatever falls off the screen
+    // wraps at the right edge: span_mut clips whatever falls off the screen
     fn draw_char(&mut self, c: char) {
         let width = font::WIDTH * self.scale;
         if self.x + width > FB_WIDTH {
@@ -48,10 +48,13 @@ impl<'a> Text<'a> {
         }
 
         for (row, bits) in font::glyph(c).iter().enumerate() {
-            for column in 0..font::WIDTH {
-                let color = if bits & (0x80 >> column) != 0 { self.fg } else { self.bg };
-                let (x, y) = (self.x + column * self.scale, self.y + row * self.scale);
-                self.fb.fill_rect(x, y, self.scale, self.scale, color);
+            let top = self.y + row * self.scale;
+            for y in top..top + self.scale {
+                let Some(span) = self.fb.span_mut(self.x, y, width) else { break };
+                // each font pixel becomes scale screen pixels
+                for (column, pixels) in span.chunks_mut(self.scale).enumerate() {
+                    pixels.fill(if bits & (0x80 >> column) != 0 { self.fg } else { self.bg });
+                }
             }
         }
         self.x += width;

@@ -58,15 +58,22 @@ impl Framebuffer {
         }
     }
 
-    // clipped to the screen, so no rectangle can index out of bounds
-    pub fn fill_rect(&mut self, x: usize, y: usize, width: usize, height: usize, color: u16) {
-        let x_end = x.saturating_add(width).min(FB_WIDTH);
-        let y_end = y.saturating_add(height).min(FB_HEIGHT);
-        if x >= x_end {
-            return;
+    // the visible part of a horizontal strip, None if it is entirely off screen.
+    // all clipping happens here, so no drawing can index out of bounds
+    pub fn span_mut(&mut self, x: usize, y: usize, width: usize) -> Option<&mut [u16]> {
+        if x >= FB_WIDTH || y >= FB_HEIGHT {
+            return None;
         }
-        for row in y..y_end {
-            self.pixels[row * FB_WIDTH + x..row * FB_WIDTH + x_end].fill(color);
+        let start = y * FB_WIDTH + x;
+        Some(&mut self.pixels[start..start + width.min(FB_WIDTH - x)])
+    }
+
+    pub fn fill_rect(&mut self, x: usize, y: usize, width: usize, height: usize, color: u16) {
+        for row in y..y.saturating_add(height) {
+            match self.span_mut(x, row, width) {
+                Some(span) => span.fill(color),
+                None => break,
+            }
         }
     }
 
