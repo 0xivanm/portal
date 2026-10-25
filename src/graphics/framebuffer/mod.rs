@@ -73,8 +73,4 @@ impl Framebuffer {
     pub fn pixels(&self) -> &[u16; FB_WIDTH * FB_HEIGHT] {
         &self.pixels
     }
-
-    pub fn pixels_mut(&mut self) -> &mut [u16; FB_WIDTH * FB_HEIGHT] {
-        &mut self.pixels
-    }
 }
