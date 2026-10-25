@@ -1,5 +1,6 @@
 use core::arch::global_asm;
 
+pub mod cache;
 pub mod clock;
 pub mod display;
 pub mod gpio;

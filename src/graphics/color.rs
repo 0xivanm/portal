@@ -8,3 +8,4 @@ pub const WHITE: u16 = rgb(255, 255, 255);
 pub const GRAY: u16 = rgb(64, 64, 64);
 pub const RED: u16 = rgb(255, 0, 0);
 pub const GREEN: u16 = rgb(0, 255, 0);
+pub const BLUE: u16 = rgb(0, 0, 255);

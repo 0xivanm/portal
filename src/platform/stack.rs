@@ -1,9 +1,9 @@
 use core::ptr::read_volatile;
 
 // start.s fills every stack with this before anything runs
-const FILL: u32 = 0xDEAD_BEEF;
+const FILL: u32 = 0xDEADBEEF;
 
-// stack tops from linker.ld; each stack starts where the one below it ends
+// stack tops from linker.ld: each stack starts where the one below it ends
 unsafe extern "C" {
     static _stackbegin: u32;
     static _systemstack: u32;

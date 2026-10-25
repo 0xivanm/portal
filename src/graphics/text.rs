@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::graphics::color::{BLACK, WHITE};
 use crate::graphics::font;
-use crate::graphics::framebuffer::{FB_HEIGHT, FB_WIDTH, Framebuffer};
+use crate::graphics::framebuffer::{FB_WIDTH, Framebuffer};
 
 pub struct Text<'a> {
     fb: &'a mut Framebuffer,
@@ -40,24 +40,18 @@ impl<'a> Text<'a> {
         self.y += font::HEIGHT * self.scale;
     }
 
-    // characters that don't fit are dropped, so drawing can never panic
+    // wraps at the right edge: fill_rect clips whatever falls off the screen
     fn draw_char(&mut self, c: char) {
         let width = font::WIDTH * self.scale;
         if self.x + width > FB_WIDTH {
             self.newline();
         }
-        if self.x + width > FB_WIDTH || self.y + font::HEIGHT * self.scale > FB_HEIGHT {
-            return;
-        }
 
-        let pixels = self.fb.pixels_mut();
         for (row, bits) in font::glyph(c).iter().enumerate() {
             for column in 0..font::WIDTH {
                 let color = if bits & (0x80 >> column) != 0 { self.fg } else { self.bg };
-                let x = self.x + column * self.scale;
-                for y in self.y + row * self.scale..self.y + (row + 1) * self.scale {
-                    pixels[y * FB_WIDTH + x..][..self.scale].fill(color);
-                }
+                let (x, y) = (self.x + column * self.scale, self.y + row * self.scale);
+                self.fb.fill_rect(x, y, self.scale, self.scale, color);
             }
         }
         self.x += width;

@@ -1,8 +1,14 @@
 use core::fmt::Write;
 
-use crate::graphics::color::{BLACK, GREEN, RED};
+use crate::graphics::color::{BLACK, GRAY, GREEN, RED, WHITE};
 use crate::graphics::framebuffer::Framebuffer;
 use crate::graphics::text::Text;
+use crate::platform::display::{LCD_HEIGHT, LCD_WIDTH};
+
+const TOP: usize = 24;
+const MARGIN: usize = 20;
+// label line above each bar
+const LABEL: usize = 10;
 
 // one labelled value per row: green if the check passed, red if not
 pub fn draw_checks<const N: usize>(fb: &mut Framebuffer, checks: [(&str, u32, bool); N]) {
@@ -14,6 +20,33 @@ pub fn draw_checks<const N: usize>(fb: &mut Framebuffer, checks: [(&str, u32, bo
     for (label, value, ok) in checks {
         text.set_color(if ok { GREEN } else { RED }, BLACK);
         let _ = writeln!(text, "{label:<12}{value:08X}");
+    }
+}
+
+// one labelled time in us per bar, like compare() returns
+pub fn draw_timings<const N: usize>(fb: &mut Framebuffer, title: &str, timings: [(&str, u32, u16); N]) {
+    assert!(N != 0 && N <= 8);
+    fb.clear();
+
+    let longest = timings.iter().map(|&(_, time, _)| time).max().unwrap_or(1).max(1);
+    let slot = (LCD_HEIGHT - TOP) / N;
+    let height = (slot - LABEL - 4).min(16);
+
+    // All bars share one scale: longer means slower.
+    fb.fill_rect(MARGIN - 1, TOP, 1, LCD_HEIGHT - TOP, WHITE);
+    fb.fill_rect(LCD_WIDTH - MARGIN, TOP, 1, LCD_HEIGHT - TOP, GRAY);
+
+    for (index, &(_, time, color)) in timings.iter().enumerate() {
+        let width = (u64::from(time) * (LCD_WIDTH - 2 * MARGIN) as u64 / u64::from(longest)) as usize;
+        fb.fill_rect(MARGIN, TOP + index * slot + LABEL, width, height, color);
+    }
+
+    let mut text = Text::new(fb);
+    text.move_to(MARGIN, 8);
+    let _ = write!(text, "{title}");
+    for (index, (label, time, _)) in timings.into_iter().enumerate() {
+        text.move_to(MARGIN, TOP + index * slot);
+        let _ = write!(text, "{label:<22}{time:>7} us");
     }
 }
 

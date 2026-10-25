@@ -40,7 +40,8 @@ fn report(title: &str, body: impl FnOnce(&mut Text)) -> ! {
     if !unsafe { CRASHED } {
         unsafe { CRASHED = true };
 
-        let fb = unsafe { framebuffer::take() };
+        // main still owns the framebuffer, but never runs again
+        let fb = unsafe { framebuffer::steal() };
         fb.clear();
         let mut text = Text::new(fb);
         text.set_scale(2);
