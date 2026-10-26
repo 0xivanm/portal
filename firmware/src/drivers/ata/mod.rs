@@ -1,5 +1,7 @@
 use core::fmt;
 
+use fat::{BlockDevice, SectorBuffer};
+
 use crate::platform::gpio::gpio_clear;
 use crate::platform::registers::{
     ATA_COMMAND, ATA_CONTROL, ATA_DATA, ATA_ERROR, ATA_LBA_HIGH, ATA_LBA_LOW, ATA_LBA_MID, ATA_NSECTOR, ATA_SELECT,
@@ -24,18 +26,6 @@ const CMD_READ_SECTORS: u8 = 0x20;
 const CMD_IDENTIFY: u8 = 0xEC;
 // the most sectors one READ SECTORS command can transfer
 const MAX_SECTORS: usize = 256;
-
-pub const SECTOR_SIZE: usize = 512;
-
-// 16-byte aligned, a cache line, so DMA can later read into it directly
-#[repr(C, align(16))]
-pub struct SectorBuffer(pub [u8; SECTOR_SIZE]);
-
-impl SectorBuffer {
-    pub const fn new() -> Self {
-        Self([0; SECTOR_SIZE])
-    }
-}
 
 #[derive(Clone, Copy, Debug)]
 pub enum Wait {
@@ -116,9 +106,16 @@ impl Ata {
     pub fn info(&self) -> &Info {
         &self.info
     }
+}
 
-    // fills the buffers from consecutive sectors, starting at lba
-    pub fn read(&mut self, lba: u64, buffers: &mut [SectorBuffer]) -> Result<(), Error> {
+impl BlockDevice for Ata {
+    type Error = Error;
+
+    fn sectors(&self) -> u64 {
+        self.info.sectors
+    }
+
+    fn read(&mut self, lba: u64, buffers: &mut [SectorBuffer]) -> Result<(), Error> {
         let end = lba + buffers.len() as u64;
         if end > self.info.sectors || end > 1 << 28 {
             return Err(Error::OutOfRange);

@@ -1,0 +1,8 @@
+[package]
+name = "fat"
+version = "0.1.0"
+edition = "2024"
+
+[dev-dependencies]
+# only creates FAT images for the tests on the PC; never part of the firmware
+fatfs = "0.3"
