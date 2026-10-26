@@ -57,11 +57,7 @@ pub const CLOCK_SOURCE: Register32 = Register32::new(0x6000_6020);
 pub const PLL_CONTROL: Register32 = Register32::new(0x6000_6034);
 pub const PLL_STATUS: Register32 = Register32::new(0x6000_603C);
 
-pub const MMAP0_LOGICAL: Register32 = Register32::new(0xF000_F000);
-pub const MMAP0_PHYSICAL: Register32 = Register32::new(0xF000_F004);
-
 pub const CPU_INT_STAT: Register32 = Register32::new(0x6000_4000);
-pub const INT_FORCED_SET: Register32 = Register32::new(0x6000_4018);
 pub const INT_FORCED_CLR: Register32 = Register32::new(0x6000_401C);
 pub const CPU_INT_EN: Register32 = Register32::new(0x6000_4024);
 pub const CPU_INT_DIS: Register32 = Register32::new(0x6000_4028);

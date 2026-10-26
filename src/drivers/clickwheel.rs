@@ -1,4 +1,3 @@
-// Ported from Rockbox firmware/target/arm/ipod/button-clickwheel.c (iPod Video path).
 use crate::platform::irq;
 use crate::platform::registers::{
     CLICKWHEEL_CTRL, CLICKWHEEL_DATA, CLICKWHEEL_STATUS, DEV_EN, DEV_INIT1, DEV_RS, GPIOA_ENABLE, GPIOA_INPUT_VAL,

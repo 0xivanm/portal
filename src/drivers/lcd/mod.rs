@@ -131,17 +131,6 @@ fn bcm_read32(address: u32) -> u32 {
     }
 }
 
-pub fn prepare_transfer() {
-    loop {
-        let command = bcm_read32(BCMA_COMMAND);
-        if command != BCMCMD_LCD_UPDATE && command != 0xFFFF {
-            break;
-        }
-        core::hint::spin_loop();
-    }
-    bcm_write_addr(BCMA_CMDPARAM);
-}
-
 unsafe extern "C" {
     fn lcd_write_data_asm_raw(pixels: *const u16, count: usize);
 }
