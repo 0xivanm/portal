@@ -1,7 +1,7 @@
 use core::arch::global_asm;
-use core::cell::UnsafeCell;
 
 use crate::platform::display::{LCD_HEIGHT, LCD_WIDTH};
+use crate::sync::singleton::Singleton;
 
 global_asm!(include_str!("copy.s"), options(raw));
 
@@ -13,30 +13,19 @@ pub struct Framebuffer {
     pixels: [u16; FB_WIDTH * FB_HEIGHT],
 }
 
-struct Storage(UnsafeCell<Framebuffer>);
-
-// Only take() and steal() access this storage
-unsafe impl Sync for Storage {}
-
-static FRAMEBUFFER: Storage = Storage(UnsafeCell::new(Framebuffer {
+static FRAMEBUFFER: Singleton<Framebuffer> = Singleton::new(Framebuffer {
     pixels: [0; FB_WIDTH * FB_HEIGHT],
-}));
-
-static mut TAKEN: bool = false;
+});
 
 // hands out the framebuffer once. not interrupt safe, so take it at startup
 pub fn take() -> Option<&'static mut Framebuffer> {
-    if unsafe { TAKEN } {
-        return None;
-    }
-    unsafe { TAKEN = true };
-    Some(unsafe { steal() })
+    FRAMEBUFFER.take()
 }
 
 /// # Safety
 /// Aliases the owner's reference: only for code that never returns to it, like the crash screen.
 pub unsafe fn steal() -> &'static mut Framebuffer {
-    unsafe { &mut *FRAMEBUFFER.0.get() }
+    unsafe { FRAMEBUFFER.steal() }
 }
 
 unsafe extern "C" {

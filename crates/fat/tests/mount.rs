@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use fat::{BlockDevice, Error, SECTOR_SIZE, SectorBuffer, Volume};
+use fat::{BlockDevice, Cache, Error, SECTOR_SIZE, SectorBuffer, Volume};
 use fatfs::{FatType, FormatVolumeOptions};
 
 // a disk image in memory
@@ -66,7 +66,8 @@ fn superfloppy() {
     format(&mut image, 0, size, FatType::Fat32, 512);
     let free = fatfs_free(&mut image, 0, size);
 
-    let volume = Volume::mount(Image(image)).unwrap();
+    let mut cache = Cache::new();
+    let volume = Volume::mount(Image(image), &mut cache).unwrap();
     assert_eq!(volume.start(), 0);
     assert_eq!(volume.cluster_size(), 512);
     assert!(volume.clusters() >= 65_525);
@@ -87,7 +88,8 @@ fn ipod_layout() {
     format(&mut image, offset, size, FatType::Fat32, 2048);
     let free = fatfs_free(&mut image, offset, size);
 
-    let volume = Volume::mount(Image(image)).unwrap();
+    let mut cache = Cache::new();
+    let volume = Volume::mount(Image(image), &mut cache).unwrap();
     assert_eq!(volume.start(), u64::from(fat_start) * 4);
     assert_eq!(volume.cluster_size(), 2048);
     assert_eq!(volume.free_clusters(), Some(free));
@@ -104,7 +106,8 @@ fn partition_in_512_byte_units() {
     partition_table(&mut image, &[(0x0C, fat_start, (size / 512) as u32)]);
     format(&mut image, offset, size, FatType::Fat32, 512);
 
-    let volume = Volume::mount(Image(image)).unwrap();
+    let mut cache = Cache::new();
+    let volume = Volume::mount(Image(image), &mut cache).unwrap();
     assert_eq!(volume.start(), u64::from(fat_start));
     assert_eq!(volume.cluster_size(), 512);
 }
@@ -114,7 +117,7 @@ fn fat16_is_not_fat32() {
     let size = 32 * 1024 * 1024;
     let mut image = vec![0; size];
     format(&mut image, 0, size, FatType::Fat16, 512);
-    assert!(matches!(Volume::mount(Image(image)), Err(Error::NotFat32)));
+    assert!(matches!(Volume::mount(Image(image), &mut Cache::new()), Err(Error::NotFat32)));
 }
 
 // a partition that points past the end of the disk is skipped, not a read error
@@ -122,5 +125,5 @@ fn fat16_is_not_fat32() {
 fn partition_past_the_end() {
     let mut image = vec![0; 64 * 512];
     partition_table(&mut image, &[(0x0B, 1_000_000, 100)]);
-    assert!(matches!(Volume::mount(Image(image)), Err(Error::NoVolume)));
+    assert!(matches!(Volume::mount(Image(image), &mut Cache::new()), Err(Error::NoVolume)));
 }

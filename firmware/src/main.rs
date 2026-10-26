@@ -4,13 +4,12 @@
 mod drivers;
 mod graphics;
 mod platform;
+mod storage;
 mod debug;
 mod sync;
 
-use fat::Volume;
-
 use crate::debug::debug::draw_checks;
-use crate::drivers::{ata, backlight, lcd};
+use crate::drivers::{backlight, lcd};
 use crate::graphics::framebuffer;
 use crate::platform::{cache, clock, irq};
 
@@ -24,7 +23,7 @@ pub extern "C" fn rust_main() -> ! {
     backlight::on();
 
     // temporary: the mounted volume against what Windows reports for E:
-    let volume = Volume::mount(ata::init().unwrap()).unwrap();
+    let volume = storage::mount().unwrap();
     let fb = framebuffer::take().unwrap();
     draw_checks(fb, [
         ("start", volume.start() as u32, volume.start() == 192_780),

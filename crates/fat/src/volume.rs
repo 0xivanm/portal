@@ -1,4 +1,5 @@
 use crate::block::{BlockDevice, SECTOR_SIZE, SectorBuffer};
+use crate::cache::Cache;
 use crate::mbr::PartitionTable;
 
 const SIGNATURE: u16 = 0xAA55;
@@ -22,8 +23,9 @@ pub enum Error<E> {
 
 // a mounted FAT32 file system: the device plus where everything on it lives
 // counts are in 512-byte disk sectors, whatever the FAT's own sector size
-pub struct Volume<D> {
+pub struct Volume<'a, D> {
     device: D,
+    cache: &'a mut Cache,
     // first sector of the volume on the disk
     start: u64,
     sectors_per_cluster: u32,
@@ -40,9 +42,9 @@ pub struct Volume<D> {
     label: [u8; 11],
 }
 
-impl<D: BlockDevice> Volume<D> {
+impl<'a, D: BlockDevice> Volume<'a, D> {
     // a boot sector at sector 0 (a "superfloppy"), else the first partition holding one
-    pub fn mount(mut device: D) -> Result<Self, Error<D::Error>> {
+    pub fn mount(mut device: D, cache: &'a mut Cache) -> Result<Self, Error<D::Error>> {
         let mut sector = SectorBuffer::new();
         read(&mut device, 0, &mut sector)?;
         if sector.u16(510) != SIGNATURE {
@@ -51,7 +53,7 @@ impl<D: BlockDevice> Volume<D> {
 
         let mut not_fat32 = false;
         match BootSector::parse(&sector) {
-            Ok(boot) => return Self::from_boot(device, 0, boot),
+            Ok(boot) => return Self::from_boot(device, cache, 0, boot),
             Err(Parse::NotFat32) => not_fat32 = true,
             Err(Parse::Invalid) => {}
         }
@@ -61,7 +63,7 @@ impl<D: BlockDevice> Volume<D> {
             for lba in partition.candidates(device.sectors()) {
                 read(&mut device, lba, &mut sector)?;
                 match BootSector::parse(&sector) {
-                    Ok(boot) => return Self::from_boot(device, lba, boot),
+                    Ok(boot) => return Self::from_boot(device, cache, lba, boot),
                     Err(Parse::NotFat32) => not_fat32 = true,
                     Err(Parse::Invalid) => {}
                 }
@@ -71,26 +73,28 @@ impl<D: BlockDevice> Volume<D> {
     }
 
     // the volume whose boot sector is at lba
-    pub fn open(mut device: D, lba: u64) -> Result<Self, Error<D::Error>> {
+    pub fn open(mut device: D, cache: &'a mut Cache, lba: u64) -> Result<Self, Error<D::Error>> {
         let mut sector = SectorBuffer::new();
         read(&mut device, lba, &mut sector)?;
         match BootSector::parse(&sector) {
-            Ok(boot) => Self::from_boot(device, lba, boot),
+            Ok(boot) => Self::from_boot(device, cache, lba, boot),
             Err(Parse::NotFat32) => Err(Error::NotFat32),
             Err(Parse::Invalid) => Err(Error::NoVolume),
         }
     }
 
     // converts the boot sector to disk sectors and reads the free count from FSInfo
-    fn from_boot(mut device: D, start: u64, boot: BootSector) -> Result<Self, Error<D::Error>> {
+    fn from_boot(mut device: D, cache: &'a mut Cache, start: u64, boot: BootSector) -> Result<Self, Error<D::Error>> {
+        // it may hold sectors of another device
+        cache.clear();
         let scale = boot.bytes_per_sector / SECTOR_SIZE as u32;
         let fat_start = start + u64::from(boot.reserved * scale);
         let fat_sectors = u64::from(boot.fat_size) * u64::from(scale);
 
         let mut free_clusters = None;
         if boot.fsinfo != 0 && boot.fsinfo != 0xFFFF {
-            let mut sector = SectorBuffer::new();
-            read(&mut device, start + u64::from(boot.fsinfo * scale), &mut sector)?;
+            let lba = start + u64::from(boot.fsinfo * scale);
+            let sector = cache.sector(&mut device, lba).map_err(Error::Device)?;
             let free = sector.u32(488);
             if sector.u32(0) == FSINFO_LEAD
                 && sector.u32(484) == FSINFO_STRUCT
@@ -103,6 +107,7 @@ impl<D: BlockDevice> Volume<D> {
 
         Ok(Volume {
             device,
+            cache,
             start,
             sectors_per_cluster: boot.sectors_per_cluster * scale,
             fat_start,
