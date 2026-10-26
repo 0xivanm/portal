@@ -2,10 +2,11 @@
 set -e
 
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
-elf=target/armv4t-none-eabi/release/ipod
+elf=target/armv4t-none-eabi/release/portal
 firmware=target/armv4t-none-eabi/release/linux.bin
 
-cargo build --release
+# from firmware/, so its .cargo/config.toml (ARM target, build-std) applies
+(cd firmware && cargo build --release)
 arm-none-eabi-objcopy -O binary "$elf" "$firmware"
 
 for mount in "/run/media/$USER"/* "/media/$USER"/* /mnt/*; do

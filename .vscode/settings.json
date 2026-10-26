@@ -1,0 +1,5 @@
+{
+    "rust-analyzer.cargo.target": "armv4t-none-eabi",
+    "rust-analyzer.cargo.extraArgs": ["-Zbuild-std=core"],
+    "rust-analyzer.check.allTargets": false
+}

@@ -1,11 +1,15 @@
-$elf = 'target/armv4t-none-eabi/release/ipod'
+$elf = 'target/armv4t-none-eabi/release/portal'
 $firmware = 'target/armv4t-none-eabi/release/linux.bin'
 
 # no global ErrorActionPreference: it turns cargo's stderr progress into errors when output is redirected
 Push-Location $PSScriptRoot
 try {
+    # from firmware/, so its .cargo/config.toml (ARM target, build-std) applies
+    Push-Location firmware
     cargo build --release
-    if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
+    $built = $LASTEXITCODE
+    Pop-Location
+    if ($built -ne 0) { throw 'Build failed.' }
 
     arm-none-eabi-objcopy -O binary $elf $firmware
     if ($LASTEXITCODE -ne 0) { throw 'Binary conversion failed.' }
