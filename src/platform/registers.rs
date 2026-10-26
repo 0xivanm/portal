@@ -29,6 +29,41 @@ impl Register32 {
     }
 }
 
+pub struct Register16 {
+    address: usize,
+}
+
+impl Register16 {
+    pub const fn new(address: usize) -> Self {
+        Self { address }
+    }
+
+    #[inline(always)]
+    pub unsafe fn read(&self) -> u16 {
+        unsafe { read_volatile(self.address as *const u16) }
+    }
+}
+
+pub struct Register8 {
+    address: usize,
+}
+
+impl Register8 {
+    pub const fn new(address: usize) -> Self {
+        Self { address }
+    }
+
+    #[inline(always)]
+    pub unsafe fn read(&self) -> u8 {
+        unsafe { read_volatile(self.address as *const u8) }
+    }
+
+    #[inline(always)]
+    pub unsafe fn write(&self, value: u8) {
+        unsafe { write_volatile(self.address as *mut u8, value) }
+    }
+}
+
 pub const DEV_INIT1: Register32 = Register32::new(0x7000_0010);
 pub const DEV_RS: Register32 = Register32::new(0x6000_6004);
 pub const DEV_EN: Register32 = Register32::new(0x6000_600C);
@@ -45,7 +80,28 @@ pub const GPIOA_INPUT_VAL: Register32 = Register32::new(0x6000_D030);
 
 pub const GPIOC_ENABLE: Register32 = Register32::new(0x6000_D008);
 pub const GPIOC_OUTPUT_EN: Register32 = Register32::new(0x6000_D018);
+pub const GPIOG_ENABLE: Register32 = Register32::new(0x6000_D088);
+pub const GPIOH_ENABLE: Register32 = Register32::new(0x6000_D08C);
+pub const GPIOI_ENABLE: Register32 = Register32::new(0x6000_D100);
+pub const GPIOK_ENABLE: Register32 = Register32::new(0x6000_D108);
+pub const GPO32_VAL: Register32 = Register32::new(0x7000_0080);
 pub const GPO32_ENABLE: Register32 = Register32::new(0x7000_0084);
+
+pub const IDE0_PRI_TIMING0: Register32 = Register32::new(0xC300_0000);
+pub const IDE0_PRI_TIMING1: Register32 = Register32::new(0xC300_0004);
+pub const IDE0_CFG: Register32 = Register32::new(0xC300_0028);
+// ATA registers of the IDE controller, one per word
+pub const ATA_DATA: Register16 = Register16::new(0xC300_01E0);
+pub const ATA_ERROR: Register8 = Register8::new(0xC300_01E4);
+pub const ATA_NSECTOR: Register8 = Register8::new(0xC300_01E8);
+pub const ATA_LBA_LOW: Register8 = Register8::new(0xC300_01EC);
+pub const ATA_LBA_MID: Register8 = Register8::new(0xC300_01F0);
+pub const ATA_LBA_HIGH: Register8 = Register8::new(0xC300_01F4);
+pub const ATA_SELECT: Register8 = Register8::new(0xC300_01F8);
+// the command when written, the status when read
+pub const ATA_COMMAND: Register8 = Register8::new(0xC300_01FC);
+// the control when written; reading gives the status without acknowledging an interrupt
+pub const ATA_CONTROL: Register8 = Register8::new(0xC300_03F8);
 
 pub const BCM_DATA32: Register32 = Register32::new(0x3000_0000);
 pub const BCM_WR_ADDR32: Register32 = Register32::new(0x3001_0000);
