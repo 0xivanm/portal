@@ -19,23 +19,25 @@ pub enum Error<E> {
     // only FAT12 or FAT16 volumes were found
     NotFat32,
     NoVolume,
+    // the FAT or a directory is damaged
+    Corrupt,
 }
 
 // a mounted FAT32 file system: the device plus where everything on it lives
 // counts are in 512-byte disk sectors, whatever the FAT's own sector size
 pub struct Volume<'a, D> {
-    device: D,
-    cache: &'a mut Cache,
+    pub(crate) device: D,
+    pub(crate) cache: &'a mut Cache,
     // first sector of the volume on the disk
     start: u64,
-    sectors_per_cluster: u32,
+    pub(crate) sectors_per_cluster: u32,
     // the first FAT, the map of which cluster follows which
-    fat_start: u64,
+    pub(crate) fat_start: u64,
     fat_sectors: u64,
     fats: u8,
     // cluster 2, where the contents of files and folders begin
-    data_start: u64,
-    clusters: u32,
+    pub(crate) data_start: u64,
+    pub(crate) clusters: u32,
     root_cluster: u32,
     free_clusters: Option<u32>,
     volume_id: u32,
@@ -133,6 +135,10 @@ impl<'a, D: BlockDevice> Volume<'a, D> {
 
     pub fn clusters(&self) -> u32 {
         self.clusters
+    }
+
+    pub fn root_cluster(&self) -> u32 {
+        self.root_cluster
     }
 
     // from FSInfo, which may be missing or out of date

@@ -23,7 +23,9 @@ pub extern "C" fn rust_main() -> ! {
     backlight::on();
 
     // temporary: the mounted volume against what Windows reports for E:
-    let volume = storage::mount().unwrap();
+    let mut volume = storage::mount().unwrap();
+    let root = volume.root_cluster();
+    let chain = volume.chain(root).try_fold(0, |count, cluster| cluster.map(|_| count + 1));
     let fb = framebuffer::take().unwrap();
     draw_checks(fb, [
         ("start", volume.start() as u32, volume.start() == 192_780),
@@ -31,6 +33,7 @@ pub extern "C" fn rust_main() -> ! {
         ("clusters", volume.clusters(), volume.clusters() == 7_813_515),
         ("free", volume.free_clusters().unwrap_or(0), volume.free_clusters() == Some(7_133_183)),
         ("volume id", volume.volume_id(), volume.volume_id() == 0xCDA5_911C),
+        ("root chain", chain.as_ref().map_or(0, |&count| count), chain.is_ok()),
     ]);
     lcd.update(fb.pixels());
 
